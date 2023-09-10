@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zerogchat.dao.ChatBanDao">
+
+    <resultMap id="BaseResultMap" type="com.zerogchat.entity.ChatBan" >
+        <result column="Id" property="Id" />
+        <result column="ip" property="ip" />
+        <result column="created" property="created" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `Id`,
+        `ip`,
+        `created`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.zerogchat.entity.ChatBan">
+        INSERT INTO chat_ban
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                `Id`,
+            </if>
+            <if test ='null != ip'>
+                `ip`,
+            </if>
+            <if test ='null != created'>
+                `created`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                #{Id},
+            </if>
+            <if test ='null != ip'>
+                #{ip},
+            </if>
+            <if test ='null != created'>
+                #{created}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO chat_ban ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.Id},
+                #{curr.ip},
+                #{curr.created}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.zerogchat.entity.ChatBan">
+        UPDATE chat_ban
+        <set>
+            <if test ='null != ip'>`ip` = #{ip},</if>
+            <if test ='null != created'>`created` = #{created}</if>
+        </set>
+        WHERE `Id` = #{Id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM chat_ban
+        WHERE `Id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM chat_ban WHERE Id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_ban
+        WHERE `Id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_ban
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != ip'>
+                and `ip` = #{ip}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_ban
+        <where>
+            <if test ='null != chatBan.Id'>
+                and `Id` = #{chatBan.Id}
+            </if>
+            <if test ='null != chatBan.ip'>
+                and `ip` = #{chatBan.ip}
+            </if>
+            <if test ='null != chatBan.created'>
+                and `created` = #{chatBan.created}
+            </if>
+        </where>
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM chat_ban
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != ip'>
+                and `ip` = #{ip}
+            </if>
+            <if test ='null != created'>
+                and `created` = #{created}
+            </if>
+        </where>
+    </select>
+</mapper>
