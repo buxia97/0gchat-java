@@ -38,4 +38,10 @@ public class ChatConfigs implements Serializable {
      * website  官方地址
      */
     private String website;
+
+    /**
+     * website  密钥
+     */
+    private String token;
+
 }

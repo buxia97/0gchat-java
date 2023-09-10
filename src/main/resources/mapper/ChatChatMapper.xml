@@ -9,6 +9,8 @@
         <result column="intro" property="intro" />
         <result column="pic" property="pic" />
         <result column="status" property="status" />
+        <result column="postTime" property="postTime" />
+
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -16,7 +18,9 @@
         `name`,
         `intro`,
         `pic`,
-        `status`
+        `status`,
+        `postTime`
+
     </sql>
 
     <!-- 插入数据 -->
@@ -36,7 +40,10 @@
                 `pic`,
             </if>
             <if test ='null != status'>
-                `status`
+                `status`,
+            </if>
+            <if test ='null != postTime'>
+                `postTime`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -53,7 +60,10 @@
                 #{pic},
             </if>
             <if test ='null != status'>
-                #{status}
+                #{status},
+            </if>
+            <if test ='null != postTime'>
+                #{postTime}
             </if>
         </trim>
     </insert>
@@ -79,7 +89,8 @@
             <if test ='null != name'>`name` = #{name},</if>
             <if test ='null != intro'>`intro` = #{intro},</if>
             <if test ='null != pic'>`pic` = #{pic},</if>
-            <if test ='null != status'>`status` = #{status}</if>
+            <if test ='null != status'>`status` = #{status},</if>
+            <if test ='null != postTime'>`postTime` = #{postTime}</if>
         </set>
         WHERE `Id` = #{Id}
     </update>
@@ -126,6 +137,7 @@
                 and `status` = #{status}
             </if>
         </where>
+        order by postTime desc
     </select>
 
     <!-- 分页条件查询 -->
@@ -149,6 +161,7 @@
                 and `status` = #{chatChat.status}
             </if>
         </where>
+        order by postTime desc
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
 

@@ -57,6 +57,11 @@ public class ChatMsgServiceImpl implements ChatMsgService {
 	}
 
 	@Override
+	public List<ChatMsg> selectTime(Integer chatid,Integer time) {
+		return dao.selectTime(chatid,time);
+	}
+
+	@Override
 	public PageList<ChatMsg> selectPage(ChatMsg chatMsg, Integer offset, Integer pageSize) {
 		PageList<ChatMsg> pageList = new PageList<>();
 

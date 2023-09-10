@@ -9,6 +9,7 @@
         <result column="rootName" property="rootName" />
         <result column="logo" property="logo" />
         <result column="website" property="website" />
+        <result column="token" property="token" />
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -16,7 +17,8 @@
         `banText`,
         `rootName`,
         `logo`,
-        `website`
+        `website`,
+        `token`
     </sql>
 
     <!-- 插入数据 -->

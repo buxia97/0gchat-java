@@ -3,13 +3,12 @@ package com.zerogchat.web;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.zerogchat.common.*;
 import com.zerogchat.entity.*;
-import com.zerogchat.common.ApiResult;
-import com.zerogchat.common.PageList;
-import com.zerogchat.common.ResultCode;
 import com.zerogchat.service.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +31,20 @@ public class ChatMsgController {
     @Autowired
     ChatMsgService service;
 
+    @Autowired
+    private ChatBanService banService;
+
+    @Autowired
+    private ChatChatService chatService;
+
+    @Autowired
+    private ChatConfigsService configsService;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
+
+    RedisHelp redisHelp =new RedisHelp();
+    ResultAll Result = new ResultAll();
 
     /***
      * 发送消息
@@ -39,18 +52,58 @@ public class ChatMsgController {
     @RequestMapping(value = "/sendMsg")
     @ResponseBody
     public String sendMsg(@RequestParam(value = "params", required = false) String  params) {
-        ChatMsg insert = null;
-        if (StringUtils.isNotBlank(params)) {
-            JSONObject object = JSON.parseObject(params);
-            insert = object.toJavaObject(ChatMsg.class);
+        try {
+            ChatMsg insert = null;
+            if (StringUtils.isNotBlank(params)) {
+                JSONObject object = JSON.parseObject(params);
+                if(object.get("type")==null||object.get("text")==null||object.get("chatid")==null){
+                    return Result.getResultJson(0,"请求参数错误！",null);
+                }
+                Integer type = Integer.parseInt(object.get("type").toString());
+                if(type < 0||type > 3){
+                    return Result.getResultJson(0,"请求参数错误！",null);
+                }
+                String ip = object.get("ip").toString();
+                String isRepeated = redisHelp.getRedis(ip+"_isRepeated",redisTemplate);
+                if(isRepeated==null){
+                    redisHelp.setRedis(ip+"_isRepeated","1",2,redisTemplate);
+                }else{
+                    return Result.getResultJson(0,"你的操作太频繁了",null);
+                }
+
+                ChatBan ban = new ChatBan();
+                ban.setIp(ip);
+                List<ChatBan> banList = banService.selectList(ban);
+                if(banList.size()>0){
+                    return Result.getResultJson(0,"你已被封禁",null);
+                }
+                insert = object.toJavaObject(ChatMsg.class);
+                Long date = System.currentTimeMillis();
+                String created = String.valueOf(date).substring(0,10);
+                insert.setCreated(Integer.parseInt(created));
+                Integer chatid = insert.getChatid();
+                ChatChat chat = chatService.selectByKey(chatid);
+                if(chat == null){
+                    return Result.getResultJson(0,"聊天室不存在",null);
+                }else{
+                    if(!chat.getStatus().equals(1)){
+                        return Result.getResultJson(0,"聊天室已关闭",null);
+                    }
+                }
+            }else{
+                return Result.getResultJson(0,"请求参数错误！",null);
+            }
+            int rows = service.insert(insert);
+            //给聊天室添加最新消息
+            JSONObject response = new JSONObject();
+            response.put("code" , rows);
+            response.put("msg"  , rows > 0 ? "添加成功" : "添加失败");
+            return response.toString();
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(0,"程序执行异常，请联系管理员",null);
         }
 
-        int rows = service.insert(insert);
-
-        JSONObject response = new JSONObject();
-        response.put("code" , rows);
-        response.put("msg"  , rows > 0 ? "添加成功" : "添加失败");
-        return response.toString();
     }
 
     /***
@@ -58,34 +111,92 @@ public class ChatMsgController {
      */
     @RequestMapping(value = "/msgDelete")
     @ResponseBody
-    public int msgDelete(@RequestParam(value = "key", required = false) String  key) {
+    public String msgDelete(@RequestParam(value = "key", required = false) String  key,
+                            @RequestParam(value = "token", required = false) String  token) {
+        try {
+            ChatConfigs configs = configsService.selectByKey(0);
+            String oldToken = configs.getToken();
+            if(!oldToken.equals(token)){
+                return Result.getResultJson(0,"密钥不正确",null);
+            }
+            int rows =  service.delete(key);
+            JSONObject response = new JSONObject();
+            response.put("code" , rows);
+            response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+            return response.toString();
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(0,"程序执行异常，请联系管理员",null);
+        }
 
-        return service.delete(key);
+
     }
 
     /***
-     * 消息列表
-     * @param searchParams Bean对象JSON字符串
-     * @param page         页码
-     * @param limit        每页显示数量
+     * 封禁用户
+     */
+    @RequestMapping(value = "/banUser")
+    @ResponseBody
+    public String banUser(@RequestParam(value = "ip", required = false) String  ip,
+                            @RequestParam(value = "token", required = false) String  token) {
+        try {
+            ChatConfigs configs = configsService.selectByKey(0);
+            String oldToken = configs.getToken();
+            if(!oldToken.equals(token)){
+                return Result.getResultJson(0,"密钥不正确",null);
+            }
+            Long date = System.currentTimeMillis();
+            String created = String.valueOf(date).substring(0,10);
+            ChatBan ban = new ChatBan();
+            ban.setIp(ip);
+            ban.setCreated(Integer.parseInt(created));
+            int rows =  banService.insert(ban);
+            JSONObject response = new JSONObject();
+            response.put("code" , rows);
+            response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
+            return response.toString();
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(0,"程序执行异常，请联系管理员",null);
+        }
+
+
+    }
+
+    /***
+     * 总消息列表
      */
     @RequestMapping(value = "/msgList")
     @ResponseBody
     public String msgList (@RequestParam(value = "searchParams", required = false) String  searchParams,
                             @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
-                            @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit) {
+                            @RequestParam(value = "limit"       , required = false, defaultValue = "1000") Integer limit) {
         ChatMsg query = new ChatMsg();
         if (StringUtils.isNotBlank(searchParams)) {
             JSONObject object = JSON.parseObject(searchParams);
             query = object.toJavaObject(ChatMsg.class);
         }
-
         PageList<ChatMsg> pageList = service.selectPage(query, page, limit);
         JSONObject response = new JSONObject();
-        response.put("code" , 0);
+        response.put("code" , 1);
         response.put("msg"  , "");
         response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
         response.put("count", pageList.getTotalCount());
+        return response.toString();
+    }
+
+    /***
+     * 按时间消息列表
+     */
+    @RequestMapping(value = "/lastMsgs")
+    @ResponseBody
+    public String lastMsgs (@RequestParam(value = "chatid", required = false) Integer  chatid,
+                           @RequestParam(value = "time"        , required = false) Integer time) {
+        List<ChatMsg> list = service.selectTime(chatid, time);
+        JSONObject response = new JSONObject();
+        response.put("code" , 1);
+        response.put("msg"  , "");
+        response.put("data" , list);
         return response.toString();
     }
 }

@@ -51,6 +51,11 @@ public interface ChatMsgDao {
     List<ChatMsg> selectList (ChatMsg chatMsg);
 
     /**
+     * [时间条件查询]
+     **/
+    List<ChatMsg> selectTime (Integer chatid,Integer time);
+
+    /**
      * [分页条件查询]
      **/
     List<ChatMsg> selectPage (@Param("chatMsg") ChatMsg chatMsg, @Param("page") Integer page, @Param("pageSize") Integer pageSize);

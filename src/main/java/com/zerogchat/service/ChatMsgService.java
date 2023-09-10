@@ -49,6 +49,11 @@ public interface ChatMsgService {
     List<ChatMsg> selectList (ChatMsg chatMsg);
 
     /**
+     * [时间条件查询]
+     **/
+    List<ChatMsg> selectTime (Integer chatid,Integer time);
+
+    /**
      * [分页条件查询]
      **/
     PageList<ChatMsg> selectPage (ChatMsg chatMsg, Integer page, Integer pageSize);

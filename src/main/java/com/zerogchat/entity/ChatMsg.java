@@ -43,4 +43,15 @@ public class ChatMsg implements Serializable {
      * url  网址
      */
     private String url;
+
+    /**
+     * created  创建时间
+     */
+    private Integer created;
+
+    /**
+     * 所属聊天室
+     */
+    private Integer chatid;
+
 }

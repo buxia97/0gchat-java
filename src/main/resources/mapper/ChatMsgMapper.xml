@@ -10,6 +10,9 @@
         <result column="type" property="type" />
         <result column="text" property="text" />
         <result column="url" property="url" />
+        <result column="created" property="created" />
+        <result column="chatid" property="chatid" />
+
     </resultMap>
 
     <sql id="Base_Column_List">
@@ -18,7 +21,9 @@
         `ip`,
         `type`,
         `text`,
-        `url`
+        `url`,
+        `created`,
+        `chatid`
     </sql>
 
     <!-- 插入数据 -->
@@ -41,7 +46,13 @@
                 `text`,
             </if>
             <if test ='null != url'>
-                `url`
+                `url`,
+            </if>
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != chatid'>
+                `chatid`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -61,7 +72,13 @@
                 #{text},
             </if>
             <if test ='null != url'>
-                #{url}
+                #{url},
+            </if>
+            <if test ='null != created'>
+                #{created},
+            </if>
+            <if test ='null != chatid'>
+                #{chatid}
             </if>
         </trim>
     </insert>
@@ -138,7 +155,17 @@
             <if test ='null != url'>
                 and `url` = #{url}
             </if>
+            <if test ='null != chatid'>
+                and `chatid` = #{chatid}
+            </if>
         </where>
+    </select>
+
+    <!-- 时间条件查询 -->
+    <select id="selectTime" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_msg
+        where `chatid` = #{chatid} and  `created` > #{time} order by created desc
     </select>
 
     <!-- 分页条件查询 -->
@@ -164,7 +191,11 @@
             <if test ='null != chatMsg.url'>
                 and `url` = #{chatMsg.url}
             </if>
+            <if test ='null != chatMsg.chatid'>
+                and `chatid` = #{chatMsg.chatid}
+            </if>
         </where>
+        order by created desc
         limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
     </select>
 
@@ -189,6 +220,9 @@
             </if>
             <if test ='null != url'>
                 and `url` = #{url}
+            </if>
+            <if test ='null != chatid'>
+                and `chatid` = #{chatid}
             </if>
         </where>
     </select>

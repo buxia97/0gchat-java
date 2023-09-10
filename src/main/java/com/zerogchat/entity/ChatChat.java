@@ -38,4 +38,13 @@ public class ChatChat implements Serializable {
      * status  聊天室状态（0关闭，1开启）
      */
     private Integer status;
+
+    /**
+     * 最新消息时间
+     */
+    private Integer postTime;
+
+
+
+
 }
