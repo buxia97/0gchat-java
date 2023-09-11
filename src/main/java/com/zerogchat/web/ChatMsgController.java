@@ -45,14 +45,18 @@ public class ChatMsgController {
 
     RedisHelp redisHelp =new RedisHelp();
     ResultAll Result = new ResultAll();
+    baseFull baseFull = new baseFull();
 
     /***
      * 发送消息
      */
     @RequestMapping(value = "/sendMsg")
     @ResponseBody
-    public String sendMsg(@RequestParam(value = "params", required = false) String  params) {
+    public String sendMsg(@RequestParam(value = "params", required = false) String  params,
+                          HttpServletRequest request) {
         try {
+            Long date = System.currentTimeMillis();
+            String created = String.valueOf(date).substring(0,10);
             ChatMsg insert = null;
             if (StringUtils.isNotBlank(params)) {
                 JSONObject object = JSON.parseObject(params);
@@ -63,7 +67,7 @@ public class ChatMsgController {
                 if(type < 0||type > 3){
                     return Result.getResultJson(0,"请求参数错误！",null);
                 }
-                String ip = object.get("ip").toString();
+                String  ip = baseFull.getIpAddr(request);
                 String isRepeated = redisHelp.getRedis(ip+"_isRepeated",redisTemplate);
                 if(isRepeated==null){
                     redisHelp.setRedis(ip+"_isRepeated","1",2,redisTemplate);
@@ -78,8 +82,8 @@ public class ChatMsgController {
                     return Result.getResultJson(0,"你已被封禁",null);
                 }
                 insert = object.toJavaObject(ChatMsg.class);
-                Long date = System.currentTimeMillis();
-                String created = String.valueOf(date).substring(0,10);
+                insert.setIp(ip);
+
                 insert.setCreated(Integer.parseInt(created));
                 Integer chatid = insert.getChatid();
                 ChatChat chat = chatService.selectByKey(chatid);
@@ -90,11 +94,18 @@ public class ChatMsgController {
                         return Result.getResultJson(0,"聊天室已关闭",null);
                     }
                 }
+
             }else{
                 return Result.getResultJson(0,"请求参数错误！",null);
             }
             int rows = service.insert(insert);
-            //给聊天室添加最新消息
+
+            //给聊天室添加最新消息时间
+            Integer chatid = insert.getChatid();
+            ChatChat chat = new ChatChat();
+            chat.setId(chatid);
+            chat.setPostTime(Integer.parseInt(created));
+            chatService.update(chat);
             JSONObject response = new JSONObject();
             response.put("code" , rows);
             response.put("msg"  , rows > 0 ? "添加成功" : "添加失败");
@@ -107,19 +118,90 @@ public class ChatMsgController {
     }
 
     /***
-     * 删除消息
+     * 发送自定义系统消息
      */
-    @RequestMapping(value = "/msgDelete")
+    @RequestMapping(value = "/sendSystemMsg")
     @ResponseBody
-    public String msgDelete(@RequestParam(value = "key", required = false) String  key,
-                            @RequestParam(value = "token", required = false) String  token) {
+    public String sendSystemMsg(@RequestParam(value = "text", required = false) String  text,
+                          @RequestParam(value = "chatid", required = false) Integer  chatid,
+                          @RequestParam(value = "token", required = false) String  token,
+                          HttpServletRequest request) {
         try {
             ChatConfigs configs = configsService.selectByKey(0);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
             }
+            ChatChat chat = chatService.selectByKey(chatid);
+            if(chat == null){
+                return Result.getResultJson(0,"聊天室不存在",null);
+            }else{
+                if(!chat.getStatus().equals(1)){
+                    return Result.getResultJson(0,"聊天室已关闭",null);
+                }
+            }
+            String  ip = baseFull.getIpAddr(request);
+            Long date = System.currentTimeMillis();
+            String created = String.valueOf(date).substring(0,10);
+            ChatMsg msg = new ChatMsg();
+            msg.setUserName("系统消息");
+            msg.setChatid(chatid);
+            msg.setText(text);
+            msg.setIp(ip);
+            msg.setCreated(Integer.parseInt(created));
+            msg.setType(2);
+            int rows = service.insert(msg);
+
+            //给聊天室添加最新消息时间
+            ChatChat newChat = new ChatChat();
+            newChat.setId(chatid);
+            newChat.setPostTime(Integer.parseInt(created));
+            chatService.update(newChat);
+            JSONObject response = new JSONObject();
+            response.put("code" , rows);
+            response.put("msg"  , rows > 0 ? "添加成功" : "添加失败");
+            return response.toString();
+
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(0,"程序执行异常，请联系管理员",null);
+        }
+    }
+
+    /***
+     * 删除消息
+     */
+    @RequestMapping(value = "/msgDelete")
+    @ResponseBody
+    public String msgDelete(@RequestParam(value = "key", required = false) String  key,
+                            @RequestParam(value = "token", required = false) String  token,
+                            HttpServletRequest request) {
+        try {
+            ChatConfigs configs = configsService.selectByKey(0);
+            String oldToken = configs.getToken();
+            if(!oldToken.equals(token)){
+                return Result.getResultJson(0,"密钥不正确",null);
+            }
+
+            ChatMsg curMsg = service.selectByKey(key);
             int rows =  service.delete(key);
+            //发送系统消息
+            String  ip = baseFull.getIpAddr(request);
+            Long date = System.currentTimeMillis();
+            String created = String.valueOf(date).substring(0,10);
+            ChatMsg msg = new ChatMsg();
+            msg.setUserName("系统消息");
+            msg.setChatid(curMsg.getChatid());
+            msg.setText("管理员删除["+curMsg.getUserName()+"]的一条消息");
+            msg.setIp(ip);
+            msg.setCreated(Integer.parseInt(created));
+            msg.setType(2);
+            service.insert(msg);
+            //给聊天室添加最新消息时间
+            ChatChat newChat = new ChatChat();
+            newChat.setId(curMsg.getChatid());
+            newChat.setPostTime(Integer.parseInt(created));
+            chatService.update(newChat);
             JSONObject response = new JSONObject();
             response.put("code" , rows);
             response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
@@ -138,12 +220,22 @@ public class ChatMsgController {
     @RequestMapping(value = "/banUser")
     @ResponseBody
     public String banUser(@RequestParam(value = "ip", required = false) String  ip,
-                            @RequestParam(value = "token", required = false) String  token) {
+                          @RequestParam(value = "chatid", required = false) Integer  chatid,
+                            @RequestParam(value = "token", required = false) String  token,
+                          HttpServletRequest request) {
         try {
             ChatConfigs configs = configsService.selectByKey(0);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
+            }
+            ChatChat chat = chatService.selectByKey(chatid);
+            if(chat == null){
+                return Result.getResultJson(0,"聊天室不存在",null);
+            }else{
+                if(!chat.getStatus().equals(1)){
+                    return Result.getResultJson(0,"聊天室已关闭",null);
+                }
             }
             Long date = System.currentTimeMillis();
             String created = String.valueOf(date).substring(0,10);
@@ -151,6 +243,21 @@ public class ChatMsgController {
             ban.setIp(ip);
             ban.setCreated(Integer.parseInt(created));
             int rows =  banService.insert(ban);
+            //发送系统消息
+            String myip = baseFull.getIpAddr(request);
+            ChatMsg msg = new ChatMsg();
+            msg.setUserName("系统消息");
+            msg.setChatid(chatid);
+            msg.setText("管理员封禁了IP["+ip+"]的聊天权限");
+            msg.setIp(myip);
+            msg.setCreated(Integer.parseInt(created));
+            msg.setType(2);
+            service.insert(msg);
+            //给聊天室添加最新消息时间
+            ChatChat newChat = new ChatChat();
+            newChat.setId(chatid);
+            newChat.setPostTime(Integer.parseInt(created));
+            chatService.update(newChat);
             JSONObject response = new JSONObject();
             response.put("code" , rows);
             response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");

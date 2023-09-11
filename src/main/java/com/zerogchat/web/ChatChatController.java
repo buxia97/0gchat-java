@@ -34,7 +34,7 @@ public class ChatChatController {
     ChatChatService service;
 
     @Autowired
-    private ChatChatService chatService;
+    private ChatMsgService msgService;
 
     @Autowired
     private ChatConfigsService configsService;
@@ -163,7 +163,7 @@ public class ChatChatController {
                     jsonList = cacheList;
                 } else {
                     PageList<ChatChat> pageList = service.selectPage(query, page, limit);
-                    jsonList = pageList.getList();
+                    List<ChatChat> list = pageList.getList();
                     if(jsonList.size() < 1){
                         JSONObject noData = new JSONObject();
                         noData.put("code" , 1);
@@ -171,6 +171,19 @@ public class ChatChatController {
                         noData.put("data" , new ArrayList());
                         noData.put("count", 0);
                         return noData.toString();
+                    }
+                    for (int i = 0; i < list.size(); i++) {
+                        Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+                        ChatChat chat = list.get(i);
+                        Integer chatid = chat.getId();
+                        //获取最新的消息
+                        List<ChatMsg> lastMsg = new ArrayList();
+                        ChatMsg msgQuery = new ChatMsg();
+                        msgQuery.setChatid(chatid);
+                        PageList<ChatMsg> msgList = msgService.selectPage(msgQuery, 1, 1);
+                        lastMsg = msgList.getList();
+                        json.put("lastMsg" , lastMsg);
+                        jsonList.add(json);
                     }
                     redisHelp.delete("chatList_"+page+"_"+limit+"_"+sqlParams,redisTemplate);
                     redisHelp.setList("chatList_"+page+"_"+limit+"_"+sqlParams,jsonList,3,redisTemplate);
