@@ -12,6 +12,8 @@
         <result column="url" property="url" />
         <result column="created" property="created" />
         <result column="chatid" property="chatid" />
+        <result column="avatar" property="avatar" />
+
 
     </resultMap>
 
@@ -23,7 +25,8 @@
         `text`,
         `url`,
         `created`,
-        `chatid`
+        `chatid`,
+        `avatar`
     </sql>
 
     <!-- 插入数据 -->
@@ -52,7 +55,10 @@
                 `created`,
             </if>
             <if test ='null != chatid'>
-                `chatid`
+                `chatid`,
+            </if>
+            <if test ='null != avatar'>
+                `avatar`
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -78,7 +84,10 @@
                 #{created},
             </if>
             <if test ='null != chatid'>
-                #{chatid}
+                #{chatid},
+            </if>
+            <if test ='null != avatar'>
+                #{avatar}
             </if>
         </trim>
     </insert>
@@ -106,7 +115,8 @@
             <if test ='null != ip'>`ip` = #{ip},</if>
             <if test ='null != type'>`type` = #{type},</if>
             <if test ='null != text'>`text` = #{text},</if>
-            <if test ='null != url'>`url` = #{url}</if>
+            <if test ='null != url'>`url` = #{url},</if>
+            <if test ='null != avatar'>`avatar` = #{avatar}</if>
         </set>
         WHERE `Id` = #{Id}
     </update>

@@ -54,4 +54,9 @@ public class ChatMsg implements Serializable {
      */
     private Integer chatid;
 
+    /**
+     * 头像
+     */
+    private String avatar;
+
 }
