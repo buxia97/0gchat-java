@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zerogchat.dao.ChatMsgDao">
+
+    <resultMap id="BaseResultMap" type="com.zerogchat.entity.ChatMsg" >
+        <result column="Id" property="Id" />
+        <result column="userName" property="userName" />
+        <result column="ip" property="ip" />
+        <result column="type" property="type" />
+        <result column="text" property="text" />
+        <result column="url" property="url" />
+        <result column="created" property="created" />
+        <result column="chatid" property="chatid" />
+        <result column="avatar" property="avatar" />
+        <result column="userKey" property="userKey" />
+
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `Id`,
+        `userName`,
+        `ip`,
+        `type`,
+        `text`,
+        `url`,
+        `created`,
+        `chatid`,
+        `avatar`,
+        `userKey`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.zerogchat.entity.ChatMsg">
+        INSERT INTO chat_msg
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                `Id`,
+            </if>
+            <if test ='null != userName'>
+                `userName`,
+            </if>
+            <if test ='null != ip'>
+                `ip`,
+            </if>
+            <if test ='null != type'>
+                `type`,
+            </if>
+            <if test ='null != text'>
+                `text`,
+            </if>
+            <if test ='null != url'>
+                `url`,
+            </if>
+            <if test ='null != created'>
+                `created`,
+            </if>
+            <if test ='null != chatid'>
+                `chatid`,
+            </if>
+            <if test ='null != avatar'>
+                `avatar`,
+            </if>
+            <if test ='null != userKey'>
+                `userKey`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                #{Id},
+            </if>
+            <if test ='null != userName'>
+                #{userName},
+            </if>
+            <if test ='null != ip'>
+                #{ip},
+            </if>
+            <if test ='null != type'>
+                #{type},
+            </if>
+            <if test ='null != text'>
+                #{text},
+            </if>
+            <if test ='null != url'>
+                #{url},
+            </if>
+            <if test ='null != created'>
+                #{created},
+            </if>
+            <if test ='null != chatid'>
+                #{chatid},
+            </if>
+            <if test ='null != avatar'>
+                #{avatar},
+            </if>
+            <if test ='null != userKey'>
+                #{userKey}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO chat_msg ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.Id},
+                #{curr.userName},
+                #{curr.ip},
+                #{curr.type},
+                #{curr.text},
+                #{curr.url}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.zerogchat.entity.ChatMsg">
+        UPDATE chat_msg
+        <set>
+            <if test ='null != userName'>`userName` = #{userName},</if>
+            <if test ='null != ip'>`ip` = #{ip},</if>
+            <if test ='null != type'>`type` = #{type},</if>
+            <if test ='null != text'>`text` = #{text},</if>
+            <if test ='null != url'>`url` = #{url},</if>
+            <if test ='null != avatar'>`avatar` = #{avatar}</if>
+        </set>
+        WHERE `Id` = #{Id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM chat_msg
+        WHERE `Id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM chat_msg WHERE Id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_msg
+        WHERE `Id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_msg
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != userName'>
+                and `userName` = #{userName}
+            </if>
+            <if test ='null != ip'>
+                and `ip` = #{ip}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != url'>
+                and `url` = #{url}
+            </if>
+            <if test ='null != chatid'>
+                and `chatid` = #{chatid}
+            </if>
+        </where>
+    </select>
+
+    <!-- 时间条件查询 -->
+    <select id="selectTime" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_msg
+        where `chatid` = #{chatid} and  `created` > #{time} order by created desc
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_msg
+        <where>
+            <if test ='null != chatMsg.Id'>
+                and `Id` = #{chatMsg.Id}
+            </if>
+            <if test ='null != chatMsg.userName'>
+                and `userName` = #{chatMsg.userName}
+            </if>
+            <if test ='null != chatMsg.ip'>
+                and `ip` = #{chatMsg.ip}
+            </if>
+            <if test ='null != chatMsg.type'>
+                and `type` = #{chatMsg.type}
+            </if>
+            <if test ='null != chatMsg.text'>
+                and `text` = #{chatMsg.text}
+            </if>
+            <if test ='null != chatMsg.url'>
+                and `url` = #{chatMsg.url}
+            </if>
+            <if test ='null != chatMsg.chatid'>
+                and `chatid` = #{chatMsg.chatid}
+            </if>
+        </where>
+        order by created desc
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM chat_msg
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != userName'>
+                and `userName` = #{userName}
+            </if>
+            <if test ='null != ip'>
+                and `ip` = #{ip}
+            </if>
+            <if test ='null != type'>
+                and `type` = #{type}
+            </if>
+            <if test ='null != text'>
+                and `text` = #{text}
+            </if>
+            <if test ='null != url'>
+                and `url` = #{url}
+            </if>
+            <if test ='null != chatid'>
+                and `chatid` = #{chatid}
+            </if>
+        </where>
+    </select>
+</mapper>

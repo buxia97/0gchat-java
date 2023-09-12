@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zerogchat.dao.ChatConfigsDao">
+
+    <resultMap id="BaseResultMap" type="com.zerogchat.entity.ChatConfigs" >
+        <result column="Id" property="Id" />
+        <result column="banText" property="banText" />
+        <result column="rootName" property="rootName" />
+        <result column="logo" property="logo" />
+        <result column="website" property="website" />
+        <result column="token" property="token" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        `Id`,
+        `banText`,
+        `rootName`,
+        `logo`,
+        `website`,
+        `token`
+    </sql>
+
+    <!-- 插入数据 -->
+    <insert id="insert" parameterType="com.zerogchat.entity.ChatConfigs">
+        INSERT INTO chat_configs
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                `Id`,
+            </if>
+            <if test ='null != banText'>
+                `banText`,
+            </if>
+            <if test ='null != rootName'>
+                `rootName`,
+            </if>
+            <if test ='null != logo'>
+                `logo`,
+            </if>
+            <if test ='null != website'>
+                `website`
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test ='null != Id'>
+                #{Id},
+            </if>
+            <if test ='null != banText'>
+                #{banText},
+            </if>
+            <if test ='null != rootName'>
+                #{rootName},
+            </if>
+            <if test ='null != logo'>
+                #{logo},
+            </if>
+            <if test ='null != website'>
+                #{website}
+            </if>
+        </trim>
+    </insert>
+
+    <!-- 批量插入数据 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO chat_configs ( <include refid="Base_Column_List" /> ) VALUES
+        <foreach collection="list" item="curr" index="index" separator=",">
+            (
+                #{curr.Id},
+                #{curr.banText},
+                #{curr.rootName},
+                #{curr.logo},
+                #{curr.website}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="update" parameterType="com.zerogchat.entity.ChatConfigs">
+        UPDATE chat_configs
+        <set>
+            <if test ='null != banText'>`banText` = #{banText},</if>
+            <if test ='null != rootName'>`rootName` = #{rootName},</if>
+            <if test ='null != logo'>`logo` = #{logo},</if>
+            <if test ='null != website'>`website` = #{website}</if>
+        </set>
+        WHERE `Id` = #{Id}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="delete">
+        DELETE FROM chat_configs
+        WHERE `Id` = #{key}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="batchDelete" parameterType = "java.util.List">
+        DELETE FROM chat_configs WHERE Id IN
+        <foreach collection="list"  item="item" open="(" separator="," close=")"  >
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 主键查询 -->
+    <select id="selectByKey" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_configs
+        WHERE `Id` = #{key}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_configs
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != banText'>
+                and `banText` = #{banText}
+            </if>
+            <if test ='null != rootName'>
+                and `rootName` = #{rootName}
+            </if>
+            <if test ='null != logo'>
+                and `logo` = #{logo}
+            </if>
+            <if test ='null != website'>
+                and `website` = #{website}
+            </if>
+        </where>
+    </select>
+
+    <!-- 分页条件查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM chat_configs
+        <where>
+            <if test ='null != chatConfigs.Id'>
+                and `Id` = #{chatConfigs.Id}
+            </if>
+            <if test ='null != chatConfigs.banText'>
+                and `banText` = #{chatConfigs.banText}
+            </if>
+            <if test ='null != chatConfigs.rootName'>
+                and `rootName` = #{chatConfigs.rootName}
+            </if>
+            <if test ='null != chatConfigs.logo'>
+                and `logo` = #{chatConfigs.logo}
+            </if>
+            <if test ='null != chatConfigs.website'>
+                and `website` = #{chatConfigs.website}
+            </if>
+        </where>
+        limit #{page,jdbcType=INTEGER}, #{pageSize,jdbcType=INTEGER}
+    </select>
+
+    <!-- 总量查询 -->
+    <select id="total" resultType="java.lang.Integer">
+        SELECT count(*) FROM chat_configs
+        <where>
+            <if test ='null != Id'>
+                and `Id` = #{Id}
+            </if>
+            <if test ='null != banText'>
+                and `banText` = #{banText}
+            </if>
+            <if test ='null != rootName'>
+                and `rootName` = #{rootName}
+            </if>
+            <if test ='null != logo'>
+                and `logo` = #{logo}
+            </if>
+            <if test ='null != website'>
+                and `website` = #{website}
+            </if>
+        </where>
+    </select>
+</mapper>
