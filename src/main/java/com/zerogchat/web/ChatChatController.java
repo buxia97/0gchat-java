@@ -50,9 +50,9 @@ public class ChatChatController {
     @RequestMapping(value = "/chatAdd")
     @ResponseBody
     public String chatAdd(@RequestParam(value = "params", required = false) String  params,
-                          @RequestParam(value = "params", required = false) String  token) {
+                          @RequestParam(value = "token", required = false) String  token) {
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
@@ -81,9 +81,9 @@ public class ChatChatController {
     @RequestMapping(value = "/chatUpdate")
     @ResponseBody
     public String chatUpdate(@RequestParam(value = "params", required = false) String  params,
-                             @RequestParam(value = "params", required = false) String  token) {
+                             @RequestParam(value = "token", required = false) String  token) {
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
@@ -91,6 +91,7 @@ public class ChatChatController {
             ChatChat update = null;
             if (StringUtils.isNotBlank(params)) {
                 JSONObject object = JSON.parseObject(params);
+                object.remove("postTime");
                 update = object.toJavaObject(ChatChat.class);
             }
 
@@ -112,10 +113,10 @@ public class ChatChatController {
     @RequestMapping(value = "/chatDelete")
     @ResponseBody
     public String chatDelete(@RequestParam(value = "key", required = false) String  key,
-                          @RequestParam(value = "params", required = false) String  token) {
+                          @RequestParam(value = "token", required = false) String  token) {
 
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
@@ -164,12 +165,14 @@ public class ChatChatController {
                 } else {
                     PageList<ChatChat> pageList = service.selectPage(query, page, limit);
                     List<ChatChat> list = pageList.getList();
-                    if(jsonList.size() < 1){
+                    if(list.size() < 1){
+
                         JSONObject noData = new JSONObject();
                         noData.put("code" , 1);
                         noData.put("msg"  , "");
                         noData.put("data" , new ArrayList());
                         noData.put("count", 0);
+                        noData.put("total", total);
                         return noData.toString();
                     }
                     for (int i = 0; i < list.size(); i++) {
@@ -183,6 +186,9 @@ public class ChatChatController {
                         PageList<ChatMsg> msgList = msgService.selectPage(msgQuery, 1, 1);
                         lastMsg = msgList.getList();
                         json.put("lastMsg" , lastMsg);
+                        //获取总消息数量
+                        Integer totalMsg = msgService.total(msgQuery);
+                        json.put("totalMsg" , totalMsg);
                         jsonList.add(json);
                     }
                     redisHelp.delete("chatList_"+page+"_"+limit+"_"+sqlParams,redisTemplate);

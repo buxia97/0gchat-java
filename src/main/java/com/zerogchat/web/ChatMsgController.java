@@ -94,6 +94,37 @@ public class ChatMsgController {
                         return Result.getResultJson(0,"聊天室已关闭",null);
                     }
                 }
+                //违禁词拦截
+                String banText = redisHelp.getRedis("banText",redisTemplate);
+                if(banText==null){
+                    ChatConfigs configs = configsService.selectByKey(1);
+                    banText = configs.getBanText();
+                    redisHelp.setRedis("banText",configs.getBanText(),86000,redisTemplate);
+                }
+                String text = insert.getText();
+                Integer isForbidden = 0;
+                if(banText!=null&&banText.length()>0){
+                    if(banText.indexOf(",") != -1){
+                        String[] strarray=banText.split(",");
+                        for (int i = 0; i < strarray.length; i++){
+                            String str = strarray[i];
+                            if(text.indexOf(str) != -1){
+                                isForbidden = 1;
+                            }
+
+                        }
+                    }else{
+                        if(text.indexOf(banText) != -1){
+                            isForbidden = 1;
+                        }
+                        if(text.equals(banText)){
+                            isForbidden = 1;
+                        }
+                    }
+                }
+                if(isForbidden.equals(1)){
+                    return Result.getResultJson(0,"您的消息包含违禁词",null);
+                }
 
             }else{
                 return Result.getResultJson(0,"请求参数错误！",null);
@@ -127,7 +158,7 @@ public class ChatMsgController {
                           @RequestParam(value = "token", required = false) String  token,
                           HttpServletRequest request) {
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
@@ -177,7 +208,7 @@ public class ChatMsgController {
                             @RequestParam(value = "token", required = false) String  token,
                             HttpServletRequest request) {
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
@@ -224,35 +255,35 @@ public class ChatMsgController {
                             @RequestParam(value = "token", required = false) String  token,
                           HttpServletRequest request) {
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
-            }
-            ChatChat chat = chatService.selectByKey(chatid);
-            if(chat == null){
-                return Result.getResultJson(0,"聊天室不存在",null);
-            }else{
-                if(!chat.getStatus().equals(1)){
-                    return Result.getResultJson(0,"聊天室已关闭",null);
-                }
             }
             Long date = System.currentTimeMillis();
             String created = String.valueOf(date).substring(0,10);
             ChatBan ban = new ChatBan();
             ban.setIp(ip);
+            Integer isBan = banService.total(ban);
+            if (isBan > 0){
+                return Result.getResultJson(0,"你已封禁该IP",null);
+            }
             ban.setCreated(Integer.parseInt(created));
             int rows =  banService.insert(ban);
             //发送系统消息
-            String myip = baseFull.getIpAddr(request);
-            ChatMsg msg = new ChatMsg();
-            msg.setUserName("系统消息");
-            msg.setChatid(chatid);
-            msg.setText("管理员封禁了IP["+ip+"]的聊天权限");
-            msg.setIp(myip);
-            msg.setCreated(Integer.parseInt(created));
-            msg.setType(2);
-            service.insert(msg);
+            ChatChat chat = chatService.selectByKey(chatid);
+            if(chat != null){
+                String myip = baseFull.getIpAddr(request);
+                ChatMsg msg = new ChatMsg();
+                msg.setUserName("系统消息");
+                msg.setChatid(chatid);
+                msg.setText("管理员封禁了IP["+ip+"]的聊天权限");
+                msg.setIp(myip);
+                msg.setCreated(Integer.parseInt(created));
+                msg.setType(2);
+                service.insert(msg);
+            }
+
             //给聊天室添加最新消息时间
             ChatChat newChat = new ChatChat();
             newChat.setId(chatid);

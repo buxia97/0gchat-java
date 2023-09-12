@@ -59,4 +59,10 @@ public class ChatMsg implements Serializable {
      */
     private String avatar;
 
+    /**
+     * 用户标识
+     */
+    private String userKey;
+
+
 }

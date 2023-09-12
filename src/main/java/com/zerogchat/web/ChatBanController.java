@@ -54,25 +54,30 @@ public class ChatBanController {
     public String banList (@RequestParam(value = "searchParams", required = false) String  searchParams,
                             @RequestParam(value = "page"        , required = false, defaultValue = "1") Integer page,
                             @RequestParam(value = "limit"       , required = false, defaultValue = "15") Integer limit,
-                           @RequestParam(value = "params", required = false) String  token) {
-        ChatConfigs configs = configsService.selectByKey(0);
-        String oldToken = configs.getToken();
-        if(!oldToken.equals(token)){
-            return Result.getResultJson(0,"密钥不正确",null);
-        }
-        ChatBan query = new ChatBan();
-        if (StringUtils.isNotBlank(searchParams)) {
-            JSONObject object = JSON.parseObject(searchParams);
-            query = object.toJavaObject(ChatBan.class);
-        }
+                           @RequestParam(value = "token", required = false) String  token) {
+        try {
+            ChatConfigs configs = configsService.selectByKey(1);
+            String oldToken = configs.getToken();
+            if(!oldToken.equals(token)){
+                return Result.getResultJson(0,"密钥不正确",null);
+            }
+            ChatBan query = new ChatBan();
+            if (StringUtils.isNotBlank(searchParams)) {
+                JSONObject object = JSON.parseObject(searchParams);
+                query = object.toJavaObject(ChatBan.class);
+            }
 
-        PageList<ChatBan> pageList = service.selectPage(query, page, limit);
-        JSONObject response = new JSONObject();
-        response.put("code" , 0);
-        response.put("msg"  , "");
-        response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
-        response.put("count", pageList.getTotalCount());
-        return response.toString();
+            PageList<ChatBan> pageList = service.selectPage(query, page, limit);
+            JSONObject response = new JSONObject();
+            response.put("code" , 1);
+            response.put("msg"  , "");
+            response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
+            response.put("count", pageList.getTotalCount());
+            return response.toString();
+        }catch (Exception e){
+            e.printStackTrace();
+            return Result.getResultJson(0,"程序执行异常，请联系管理员",null);
+        }
     }
 
     /***
@@ -81,10 +86,10 @@ public class ChatBanController {
     @RequestMapping(value = "/banDelete")
     @ResponseBody
     public String banDelete(@RequestParam(value = "key", required = false) String  key,
-                          @RequestParam(value = "params", required = false) String  token) {
+                          @RequestParam(value = "token", required = false) String  token) {
 
         try {
-            ChatConfigs configs = configsService.selectByKey(0);
+            ChatConfigs configs = configsService.selectByKey(1);
             String oldToken = configs.getToken();
             if(!oldToken.equals(token)){
                 return Result.getResultJson(0,"密钥不正确",null);
