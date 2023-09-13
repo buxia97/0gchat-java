@@ -7,6 +7,7 @@ import com.zerogchat.common.*;
 import com.zerogchat.entity.*;
 import com.zerogchat.service.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.hssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
@@ -16,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * 控制层
@@ -407,4 +407,68 @@ public class ChatMsgController {
         response.put("count", jsonList.size());
         return response.toString();
     }
+
+    /***
+     * 导出聊天记录
+     *
+     */
+    @RequestMapping(value = "/chatExcel")
+    @ResponseBody
+    public void invitationExcel(@RequestParam(value = "chatid" , required = false) Integer chatid, @RequestParam(value = "token", required = false) String  token, HttpServletResponse response) throws IOException {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet("聊天记录");
+        ChatConfigs configs = configsService.selectByKey(1);
+        String oldToken = configs.getToken();
+        if(!oldToken.equals(token)){
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
+            response.flushBuffer();
+            workbook.write(response.getOutputStream());
+        }
+        ChatChat chat = chatService.selectByKey(chatid);
+        if(chat == null){
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-disposition", "attachment;filename=nodata.xls");
+            response.flushBuffer();
+            workbook.write(response.getOutputStream());
+        }
+        ChatMsg query = new ChatMsg();
+        query.setChatid(chatid);
+        List<ChatMsg> list = service.selectList(query);
+
+        Collections.reverse(list);
+
+        String fileName = "chatExcel-"+chatid + ".xls";//设置要导出的文件的名字
+        //新增数据行，并且设置单元格数据
+
+        int rowNum = 1;
+
+        String[] headers = { "ID", "用户名称", "消息内容", "发送时间", "URL地址","IP地址"};
+        //headers表示excel表中第一行的表头
+
+        HSSFRow row = sheet.createRow(0);
+        //在excel表中添加表头
+
+        for(int i=0;i<headers.length;i++){
+            HSSFCell cell = row.createCell(i);
+            HSSFRichTextString text = new HSSFRichTextString(headers[i]);
+            cell.setCellValue(text);
+        }
+        for (ChatMsg msg : list) {
+            HSSFRow row1 = sheet.createRow(rowNum);
+            row1.createCell(0).setCellValue(msg.getId());
+            row1.createCell(1).setCellValue(msg.getUserName());
+            row1.createCell(2).setCellValue(msg.getText());
+            row1.createCell(3).setCellValue(msg.getCreated());
+            row1.createCell(4).setCellValue(msg.getUrl());
+            row1.createCell(5).setCellValue(msg.getIp());
+            rowNum++;
+        }
+
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-disposition", "attachment;filename=" + fileName);
+        response.flushBuffer();
+        workbook.write(response.getOutputStream());
+    }
+
 }
