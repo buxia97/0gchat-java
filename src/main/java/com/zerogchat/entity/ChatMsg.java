@@ -64,5 +64,10 @@ public class ChatMsg implements Serializable {
      */
     private String userKey;
 
+    /**
+     * 回复消息ID
+     */
+    private Integer reply;
+
 
 }

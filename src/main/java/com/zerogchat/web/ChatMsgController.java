@@ -16,7 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 控制层
@@ -128,6 +131,13 @@ public class ChatMsgController {
 
             }else{
                 return Result.getResultJson(0,"请求参数错误！",null);
+            }
+            //查看是否有回复消息
+            if(insert.getReply()!=null){
+                ChatMsg replyMsg = service.selectByKey(insert.getReply());
+                if(replyMsg==null){
+                    return Result.getResultJson(0,"回复的消息不存在",null);
+                }
             }
             int rows = service.insert(insert);
 
@@ -314,12 +324,42 @@ public class ChatMsgController {
             JSONObject object = JSON.parseObject(searchParams);
             query = object.toJavaObject(ChatMsg.class);
         }
+        List jsonList = new ArrayList();
         PageList<ChatMsg> pageList = service.selectPage(query, page, limit);
+        List<ChatMsg> list = pageList.getList();
+        if(list.size() < 1){
+
+            JSONObject noData = new JSONObject();
+            noData.put("code" , 1);
+            noData.put("msg"  , "");
+            noData.put("data" , new ArrayList());
+            noData.put("count", 0);
+            return noData.toString();
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+            ChatMsg msg = list.get(i);
+            Integer reply = msg.getReply();
+            Map replyJSon = new HashMap();
+            if (!reply.equals(0)){
+                ChatMsg replyMsg = service.selectByKey(reply);
+                if(replyMsg==null){
+                    replyJSon.put("isDeleted",1);
+                    replyJSon.put("text","消息已删除");
+                }else{
+                    replyJSon.put("isDeleted",0);
+                    replyJSon = JSONObject.parseObject(JSONObject.toJSONString(replyMsg), Map.class);
+                }
+                json.put("replyJSon",replyJSon);
+            }
+
+            jsonList.add(json);
+        }
         JSONObject response = new JSONObject();
         response.put("code" , 1);
         response.put("msg"  , "");
-        response.put("data" , null != pageList.getList() ? pageList.getList() : new JSONArray());
-        response.put("count", pageList.getTotalCount());
+        response.put("data" , jsonList);
+        response.put("count", jsonList.size());
         return response.toString();
     }
 
@@ -330,11 +370,41 @@ public class ChatMsgController {
     @ResponseBody
     public String lastMsgs (@RequestParam(value = "chatid", required = false) Integer  chatid,
                            @RequestParam(value = "time"        , required = false) Integer time) {
+        List jsonList = new ArrayList();
         List<ChatMsg> list = service.selectTime(chatid, time);
+        if(list.size() < 1){
+
+            JSONObject noData = new JSONObject();
+            noData.put("code" , 1);
+            noData.put("msg"  , "");
+            noData.put("data" , new ArrayList());
+            noData.put("count", 0);
+            return noData.toString();
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Map json = JSONObject.parseObject(JSONObject.toJSONString(list.get(i)), Map.class);
+            ChatMsg msg = list.get(i);
+            Integer reply = msg.getReply();
+            Map replyJSon = new HashMap();
+            if (!reply.equals(0)){
+                ChatMsg replyMsg = service.selectByKey(reply);
+                if(replyMsg==null){
+                    replyJSon.put("isDeleted",1);
+                    replyJSon.put("text","消息已删除");
+                }else{
+                    replyJSon.put("isDeleted",0);
+                    replyJSon = JSONObject.parseObject(JSONObject.toJSONString(replyMsg), Map.class);
+                }
+                json.put("replyJSon",replyJSon);
+            }
+
+            jsonList.add(json);
+        }
         JSONObject response = new JSONObject();
         response.put("code" , 1);
         response.put("msg"  , "");
-        response.put("data" , list);
+        response.put("data" , jsonList);
+        response.put("count", jsonList.size());
         return response.toString();
     }
 }

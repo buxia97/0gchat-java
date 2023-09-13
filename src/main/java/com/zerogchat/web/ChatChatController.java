@@ -9,6 +9,7 @@ import com.zerogchat.service.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,6 +42,9 @@ public class ChatChatController {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     RedisHelp redisHelp =new RedisHelp();
     ResultAll Result = new ResultAll();
@@ -122,6 +126,11 @@ public class ChatChatController {
                 return Result.getResultJson(0,"密钥不正确",null);
             }
             int rows =  service.delete(key);
+            //删除聊天室所有的消息
+            if(rows > 0){
+                jdbcTemplate.execute("DELETE FROM chat_msg WHERE chatid="+key+";");
+            }
+
             JSONObject response = new JSONObject();
             response.put("code" , rows);
             response.put("msg"  , rows > 0 ? "操作成功" : "操作失败");
